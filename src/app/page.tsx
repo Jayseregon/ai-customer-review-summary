@@ -1,5 +1,3 @@
-import { ListChecks } from "lucide-react";
-
 import {
   Card,
   CardContent,
@@ -7,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Weather } from "@/components/Weather";
 
 export default function Home() {
   return (
@@ -24,43 +23,7 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ul className="list-none space-y-2 p-4 bg-muted rounded-md">
-              <li className="flex items-start">
-                <ListChecks className="mr-2 h-5 w-5 text-primary flex-shrink-0" />
-                <span>
-                  <span className="font-semibold">AI Workflows:</span> Thinking
-                  through the AI steps.
-                </span>
-              </li>
-              <li className="flex items-start">
-                <ListChecks className="mr-2 h-5 w-5 text-primary flex-shrink-0" />
-                <span>
-                  <span className="font-semibold">Backend Structure:</span>{" "}
-                  Organizing the server-side logic.
-                </span>
-              </li>
-              <li className="flex items-start">
-                <ListChecks className="mr-2 h-5 w-5 text-primary flex-shrink-0" />
-                <span>
-                  <span className="font-semibold">Persistence:</span> Handling
-                  data storage effectively.
-                </span>
-              </li>
-              <li className="flex items-start">
-                <ListChecks className="mr-2 h-5 w-5 text-primary flex-shrink-0" />
-                <span>
-                  <span className="font-semibold">Frontend UI:</span> Crafting a
-                  clean and functional user interface.
-                </span>
-              </li>
-              <li className="flex items-start">
-                <ListChecks className="mr-2 h-5 w-5 text-primary flex-shrink-0" />
-                <span>
-                  <span className="font-semibold">Library Use:</span> Smartly
-                  using tools (like Shadcn!) to boost speed and quality.
-                </span>
-              </li>
-            </ul>
+            <Weather />
           </CardContent>
         </Card>
       </main>

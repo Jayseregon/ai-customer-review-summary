@@ -1,0 +1,13 @@
+{
+    "servers": {
+        "mcp-docs-server": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@mastra/mcp-docs-server"
+            ],
+            "env": {},
+            "type": "stdio"
+        }
+    }
+}
