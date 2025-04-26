@@ -5,7 +5,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ReviewAnalyzer } from "@/components/ReviewAnalyzer";
 import { Weather } from "@/components/Weather";
+
 
 export default function Home() {
   return (

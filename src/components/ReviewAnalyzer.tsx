@@ -1,0 +1,142 @@
+"use client";
+
+import { useState, useTransition, FormEvent, ChangeEvent } from "react";
+import { analyzeCustomerReviews } from "@/actions/mastra/action";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { CSVLoader } from "@langchain/community/document_loaders/fs/csv";
+import { Document } from "@langchain/core/documents";
+
+export function ReviewAnalyzer() {
+  const [file, setFile] = useState<File | null>(null);
+  const [fileName, setFileName] = useState<string>("");
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+      setFileName(e.target.files[0].name);
+    }
+  }
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+
+    if (!file) {
+      setError("Please select a CSV file first");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        // Load the CSV file using CSVLoader from langchain
+        const loader: CSVLoader = new CSVLoader(file);
+        const docs: Document<Record<string, any>>[] = await loader.load();
+
+        // For simplicity, we just keep the pageContent for each document, to a raw string
+        // In a real-world scenario, you might want to process the documents further, leveraging the metadata
+        const csvContent = docs.map((doc) => doc.pageContent).join("\n");
+
+        // Pass the concatenated CSV content to the server action directly
+        const result = await analyzeCustomerReviews(csvContent);
+        setAnalysis(result);
+      } catch (error: any) {
+        setError(error.message || "Something went wrong analyzing the reviews");
+      }
+    });
+  }
+
+  return (
+    <div className="w-full">
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={handleSubmit}>
+        <label
+          htmlFor="csvFile"
+          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            <svg
+              className="w-8 h-8 mb-3 text-gray-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
+            <p className="mb-2 text-sm text-gray-500">
+              <span className="font-semibold">Click to upload</span> or drag and
+              drop
+            </p>
+            <p className="text-xs text-gray-500">CSV files only</p>
+          </div>
+          <input
+            id="csvFile"
+            name="csvFile"
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+        </label>
+
+        {fileName && (
+          <div className="text-sm text-center">
+            Selected file: <span className="font-medium">{fileName}</span>
+          </div>
+        )}
+
+        <button
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+          disabled={isPending || !file}
+          type="submit">
+          {isPending ? "Analyzing..." : "Analyze Reviews"}
+        </button>
+      </form>
+
+      {error && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-600">
+          {error}
+        </div>
+      )}
+
+      {analysis && (
+        <Card className="mt-6">
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-semibold mb-2">Analysis Results</h3>
+            {typeof analysis === "string" ? (
+              <div className="whitespace-pre-wrap">{analysis}</div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Key Insights</h4>
+                  <div className="pl-4">
+                    {analysis.keyInsights?.map((insight: string, i: number) => (
+                      <p key={i}>• {insight}</p>
+                    )) || <p>No key insights provided</p>}
+                  </div>
+                </div>
+
+                {analysis.summary && (
+                  <div>
+                    <h4 className="font-medium">Summary</h4>
+                    <p>{analysis.summary}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="text-sm text-gray-500">
+            Analysis generated by AI based on provided customer reviews
+          </CardFooter>
+        </Card>
+      )}
+    </div>
+  );
+}
