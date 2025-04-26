@@ -10,14 +10,16 @@ export const readCustomerReviewsCSV = createTool({
   }),
   execute: async () => {
     try {
+      // For now, we don't need to do anything here
 
       return {
         success: true,
-        message: "CSV file read successfully",
+        message: "CSCV content read successfully",
       };
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+
       return {
         success: false,
         message: `Error reading CSV file: ${errorMessage}`,

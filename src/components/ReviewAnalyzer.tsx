@@ -1,10 +1,20 @@
 "use client";
 
-import { useState, useTransition, FormEvent, ChangeEvent } from "react";
+import {
+  useState,
+  useTransition,
+  FormEvent,
+  ChangeEvent,
+  DragEvent,
+} from "react";
+import { UploadCloud } from "lucide-react";
+
 import { analyzeCustomerReviews } from "@/actions/mastra/action";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { CSVLoader } from "@langchain/community/document_loaders/fs/csv";
-import { Document } from "@langchain/core/documents";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function ReviewAnalyzer() {
   const [file, setFile] = useState<File | null>(null);
@@ -20,27 +30,36 @@ export function ReviewAnalyzer() {
     }
   }
 
+  function handleDragOver(e: DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function handleDrop(e: DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFile(e.dataTransfer.files[0]);
+      setFileName(e.dataTransfer.files[0].name);
+    }
+  }
+
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
     if (!file) {
       setError("Please select a CSV file first");
+
       return;
     }
 
     startTransition(async () => {
       try {
-        // Load the CSV file using CSVLoader from langchain
-        const loader: CSVLoader = new CSVLoader(file);
-        const docs: Document<Record<string, any>>[] = await loader.load();
+        // Pass the file to the server action directly, as context
+        const result = await analyzeCustomerReviews(file);
 
-        // For simplicity, we just keep the pageContent for each document, to a raw string
-        // In a real-world scenario, you might want to process the documents further, leveraging the metadata
-        const csvContent = docs.map((doc) => doc.pageContent).join("\n");
-
-        // Pass the concatenated CSV content to the server action directly
-        const result = await analyzeCustomerReviews(csvContent);
         setAnalysis(result);
       } catch (error: any) {
         setError(error.message || "Something went wrong analyzing the reviews");
@@ -50,60 +69,48 @@ export function ReviewAnalyzer() {
 
   return (
     <div className="w-full">
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={handleSubmit}>
-        <label
-          htmlFor="csvFile"
-          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-            <svg
-              className="w-8 h-8 mb-3 text-gray-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
-            <p className="mb-2 text-sm text-gray-500">
-              <span className="font-semibold">Click to upload</span> or drag and
-              drop
-            </p>
-            <p className="text-xs text-gray-500">CSV files only</p>
-          </div>
-          <input
-            id="csvFile"
-            name="csvFile"
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-        </label>
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        <div className="grid w-full items-center gap-1.5">
+          <Label
+            className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-background/5 hover:bg-background/10"
+            htmlFor="csvFile"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <UploadCloud className="w-8 h-8 mb-3 text-muted-foreground" />
+              <p className="mb-2 text-sm text-muted-foreground">
+                <span className="font-semibold">Click to upload</span> or drag
+                and drop
+              </p>
+              <p className="text-xs text-muted-foreground">CSV files only</p>
+            </div>
+            <Input
+              accept=".csv"
+              className="hidden"
+              id="csvFile"
+              name="csvFile"
+              type="file"
+              onChange={handleFileChange}
+            />
+          </Label>
+        </div>
 
         {fileName && (
-          <div className="text-sm text-center">
+          <p className="text-sm text-center">
             Selected file: <span className="font-medium">{fileName}</span>
-          </div>
+          </p>
         )}
 
-        <button
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-          disabled={isPending || !file}
-          type="submit">
+        <Button disabled={isPending || !file} type="submit">
           {isPending ? "Analyzing..." : "Analyze Reviews"}
-        </button>
+        </Button>
       </form>
 
       {error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-600">
-          {error}
-        </div>
+        <Alert className="mt-4" variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {analysis && (
@@ -132,7 +139,7 @@ export function ReviewAnalyzer() {
               </div>
             )}
           </CardContent>
-          <CardFooter className="text-sm text-gray-500">
+          <CardFooter className="text-sm text-muted-foreground">
             Analysis generated by AI based on provided customer reviews
           </CardFooter>
         </Card>
